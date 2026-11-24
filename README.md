@@ -1,5 +1,37 @@
 # Kalori ve Spor Takip
 
+İki sürümü var: **telefon (web uygulaması, `docs/`)** ve **masaüstü (Python/Tkinter)**.
+
+## 📱 Telefon sürümü (Android / iPhone)
+
+`docs/` klasörü, telefona "uygulama gibi" kurulabilen bir web uygulamasıdır (PWA).
+Veriler telefonda SQLite (sql.js) ile saklanır; internet olmadan da açılır, kalori hesabı için internet gerekir.
+
+**Yayınlama (bir kez):**
+- *GitHub Pages:* Depo → Settings → Pages → "Deploy from a branch" → dal: `ccr-0219eb3c-uja5t2`, klasör: `/docs` → Save.
+  Birkaç dakika sonra adres `https://seco24.github.io/sercan-Spor-besin/` olur.
+  Not: GitHub Pages özel (private) depolarda yalnızca ücretli planlarda çalışır; ücretsiz kullanmak için depo herkese açık olmalı.
+- *Alternatif (depo özel kalsın):* `docs` klasörünü https://app.netlify.com/drop adresine sürükleyip bırakın; size bir adres verir.
+
+**Telefona kurulum (Android / Chrome):** adresi Chrome'da açın → sağ üstteki ⋮ menü → **"Ana ekrana ekle"** / **"Uygulamayı yükle"**.
+İlk açılışta boy, kilo, yaş, cinsiyet ve Anthropic API anahtarınızı girin.
+
+**API anahtarı:** Telefonda ortam değişkeni olmadığı için anahtar ⚙ Ayarlar'a bir kez girilir; kodda yer almaz,
+yalnızca o telefonun tarayıcı deposunda tutulur ve sadece `api.anthropic.com`'a gönderilir. Telefonu başkasıyla paylaşıyorsanız
+anahtarı ayarlardan silebilirsiniz. Anthropic konsolunda anahtar için harcama limiti koymanız önerilir.
+
+**Yedek:** ⚙ Ayarlar → "Yedeği indir (.db)" ile tüm kayıtları SQLite dosyası olarak alabilir, "Yedekten yükle" ile geri yükleyebilirsiniz.
+
+**Geliştirme:** kaynak kod `mobil/src/` içinde.
+```bash
+cd mobil && npm install
+npm test        # hesaplama ve JSON testleri
+npm run build   # docs/ klasörünü yeniden üretir
+```
+Kodu değiştirdiyseniz `mobil/src/sw.js` içindeki `SURUM` değerini artırın ki telefonlar yeni sürümü alsın.
+
+## 🖥 Masaüstü sürümü
+
 Türkçe arayüzlü, sade bir masaüstü kalori ve spor takip uygulaması (Python + Tkinter + SQLite).
 Yemek ve egzersiz kalorileri, serbest metinden Anthropic Claude API ile tahmin edilir.
 

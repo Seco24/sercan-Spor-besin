@@ -1,0 +1,17 @@
+{
+  "name": "kalori-takip-mobil",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Kalori ve spor takip uygulamasının telefon (PWA) sürümü",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.13.0",
+    "sql.js": "^1.10.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

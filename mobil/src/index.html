@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Kalori Takip</title>
+  <meta name="description" content="Kalori ve spor takip uygulaması">
+  <meta name="theme-color" content="#1f7a5a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="ikon-192.png">
+  <link rel="apple-touch-icon" href="ikon-192.png">
+  <link rel="stylesheet" href="stil.css">
+</head>
+<body class="yukleniyor">
+  <header class="ust">
+    <h1>Kalori Takip</h1>
+    <button id="ayar-ac" class="ikon-buton" aria-label="Ayarlar">⚙</button>
+  </header>
+
+  <main>
+    <!-- Tarih gezinme -->
+    <nav class="tarih-cubugu" aria-label="Tarih">
+      <button id="onceki" class="ikon-buton" aria-label="Önceki gün">◀</button>
+      <input id="tarih" type="date" aria-label="Tarih seç">
+      <button id="sonraki" class="ikon-buton" aria-label="Sonraki gün">▶</button>
+      <button id="bugun" class="metin-buton">Bugün</button>
+    </nav>
+
+    <!-- Günün özeti -->
+    <section class="ozet" aria-label="Günün özeti">
+      <div class="kart"><span>Alınan</span><b id="ozet-alinan">0</b><small>kcal</small></div>
+      <div class="kart"><span>BMR</span><b id="ozet-bmr">0</b><small>kcal</small></div>
+      <div class="kart"><span>Sporla yakılan</span><b id="ozet-yakilan">0</b><small>kcal</small></div>
+      <div class="kart net"><span>Net</span><b id="ozet-net">0</b><small>kcal</small></div>
+    </section>
+    <p class="formul">Net = Alınan − BMR − Sporla yakılan · eksi değer kalori açığıdır</p>
+
+    <!-- Yemek / Spor sekmeleri -->
+    <div class="sekmeler" role="tablist">
+      <button class="sekme" role="tab" data-sekme="yemekler" aria-selected="true">🍽 Yemekler <span id="sayi-yemekler" class="rozet"></span></button>
+      <button class="sekme" role="tab" data-sekme="sporlar" aria-selected="false">🏃 Spor <span id="sayi-sporlar" class="rozet"></span></button>
+    </div>
+
+    <form id="giris-form" class="giris">
+      <label id="giris-etiket" for="giris">Ne yediniz?</label>
+      <input id="giris" type="text" autocomplete="off" enterkeyhint="send">
+      <button id="ekle" type="submit" class="ana-buton">Hesapla ve Ekle</button>
+      <p id="durum" class="durum" aria-live="polite"></p>
+    </form>
+
+    <ul id="liste" class="liste"></ul>
+  </main>
+
+  <!-- Ayarlar / ilk açılış profili -->
+  <dialog id="ayarlar">
+    <form id="ayar-form">
+      <div class="dialog-ust">
+        <h2 id="ayar-baslik">Ayarlar</h2>
+        <button type="button" id="ayar-kapat" class="ikon-buton" aria-label="Kapat">✕</button>
+      </div>
+      <div class="alanlar">
+        <label>Boy (cm)<input name="boy" inputmode="decimal" required></label>
+        <label>Kilo (kg)<input name="kilo" inputmode="decimal" required></label>
+        <label>Yaş<input name="yas" inputmode="numeric" required></label>
+        <fieldset>
+          <legend>Cinsiyet</legend>
+          <label class="secim"><input type="radio" name="cinsiyet" value="erkek" checked> Erkek</label>
+          <label class="secim"><input type="radio" name="cinsiyet" value="kadın"> Kadın</label>
+        </fieldset>
+      </div>
+      <label>Anthropic API anahtarı
+        <input name="anahtar" type="password" autocomplete="off" placeholder="sk-ant-...">
+      </label>
+      <p class="ipucu">Anahtar yalnızca bu telefonda saklanır ve sadece api.anthropic.com'a gönderilir.
+        Anahtarı console.anthropic.com adresinden alabilirsiniz.</p>
+      <button type="submit" class="ana-buton">Kaydet</button>
+      <div class="yedek">
+        <button type="button" id="yedek-indir" class="metin-buton">Yedeği indir (.db)</button>
+        <label class="metin-buton">Yedekten yükle<input id="yedek-yukle" type="file" accept=".db,application/octet-stream,application/x-sqlite3" hidden></label>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- sql.js: tarayıcıda çalışan SQLite -->
+  <script src="sql-wasm.js"></script>
+  <script src="app.bundle.js"></script>
+</body>
+</html>
