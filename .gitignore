@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+kalori_takip.db
+.env
+.venv/
