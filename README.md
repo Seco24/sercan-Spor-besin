@@ -16,9 +16,13 @@ Veriler telefonda SQLite (sql.js) ile saklanır; internet olmadan da açılır, 
 **Telefona kurulum (Android / Chrome):** adresi Chrome'da açın → sağ üstteki ⋮ menü → **"Ana ekrana ekle"** / **"Uygulamayı yükle"**.
 İlk açılışta boy, kilo, yaş, cinsiyet ve Anthropic API anahtarınızı girin.
 
+**Yapay zeka (⚙ Ayarlar → "Yapay zeka"):**
+- **Gemini (ücretsiz, varsayılan):** https://aistudio.google.com/apikey adresinden Google hesabıyla anahtar alınır, kredi kartı gerekmez.
+  Günlük kullanım sınırı vardır. Ücretsiz katmanda Google girilen metinleri ürünlerini geliştirmek için kullanabilir.
+- **Claude (ücretli):** https://console.anthropic.com adresinden bakiye yükleyip anahtar oluşturulur.
+
 **API anahtarı:** Telefonda ortam değişkeni olmadığı için anahtar ⚙ Ayarlar'a bir kez girilir; kodda yer almaz,
-yalnızca o telefonun tarayıcı deposunda tutulur ve sadece `api.anthropic.com`'a gönderilir. Telefonu başkasıyla paylaşıyorsanız
-anahtarı ayarlardan silebilirsiniz. Anthropic konsolunda anahtar için harcama limiti koymanız önerilir.
+yalnızca o telefonun tarayıcı deposunda tutulur ve sadece seçili sağlayıcıya gönderilir.
 
 **Yedek:** ⚙ Ayarlar → "Yedeği indir (.db)" ile tüm kayıtları SQLite dosyası olarak alabilir, "Yedekten yükle" ile geri yükleyebilirsiniz.
 

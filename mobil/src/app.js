@@ -3,8 +3,25 @@
 import { bmrHesapla, gunlukOzet } from "./hesaplama.js";
 import { Veritabani } from "./veritabani.js";
 import {
-  YapayZekaHatasi, anahtarGetir, anahtarKaydet, sporKalorisi, yemekKalorisi,
+  YapayZekaHatasi, anahtarGetir, anahtarKaydet, saglayiciGetir, saglayiciKaydet,
+  sporKalorisi, yemekKalorisi,
 } from "./yapay_zeka.js";
+
+// Ayarlar ekranında her sağlayıcı için yazılan anahtar (Kaydet'e basılınca saklanır).
+const girilenAnahtarlar = { gemini: "", claude: "" };
+const SAGLAYICI_BILGI = {
+  gemini: {
+    etiket: "Gemini API anahtarı",
+    ornek: "AIza...",
+    ipucu: "Ücretsiz: aistudio.google.com/apikey adresinden Google hesabınızla alın, kredi kartı gerekmez. " +
+      "Günlük kullanım sınırı vardır; ücretsiz katmanda Google girdiğiniz metinleri ürünlerini geliştirmek için kullanabilir.",
+  },
+  claude: {
+    etiket: "Anthropic (Claude) API anahtarı",
+    ornek: "sk-ant-...",
+    ipucu: "Ücretli: console.anthropic.com adresinden bakiye yükleyip anahtar oluşturun.",
+  },
+};
 
 const $ = (secici) => document.querySelector(secici);
 const sayi = (n) => Math.round(n).toLocaleString("tr-TR");
@@ -142,7 +159,10 @@ function ayarlariAc() {
   form.kilo.value = profil?.kilo ?? "";
   form.yas.value = profil?.yas ?? "";
   form.cinsiyet.value = profil?.cinsiyet ?? "erkek";
-  form.anahtar.value = anahtarGetir();
+  girilenAnahtarlar.gemini = anahtarGetir("gemini");
+  girilenAnahtarlar.claude = anahtarGetir("claude");
+  form.saglayici.value = saglayiciGetir();
+  anahtarAlaniniGuncelle();
   // İlk açılışta profil olmadan pencere kapatılamaz.
   $("#ayar-kapat").hidden = !profil;
   $("#ayar-baslik").textContent = profil ? "Ayarlar" : "Hoş geldiniz! Bilgilerinizi girin";
@@ -160,9 +180,22 @@ async function ayarlariKaydet(olay) {
     return;
   }
   await db.profilKaydet(boy, kilo, form.cinsiyet.value, yas);
-  anahtarKaydet(form.anahtar.value.trim());
+  girilenAnahtarlar[form.saglayici.value] = form.anahtar.value.trim();
+  saglayiciKaydet(form.saglayici.value);
+  anahtarKaydet("gemini", girilenAnahtarlar.gemini);
+  anahtarKaydet("claude", girilenAnahtarlar.claude);
   $("#ayarlar").close();
   yenile();
+}
+
+// Seçili sağlayıcıya göre anahtar kutusunun etiketini, örneğini ve açıklamasını değiştir.
+function anahtarAlaniniGuncelle() {
+  const form = $("#ayar-form");
+  const bilgi = SAGLAYICI_BILGI[form.saglayici.value];
+  $("#anahtar-etiket").textContent = bilgi.etiket;
+  $("#anahtar-ipucu").textContent = bilgi.ipucu;
+  form.anahtar.placeholder = bilgi.ornek;
+  form.anahtar.value = girilenAnahtarlar[form.saglayici.value];
 }
 
 // Yedek: veritabanını .db dosyası olarak indir.
@@ -204,6 +237,15 @@ async function basla() {
   $("#ayar-kapat").onclick = () => $("#ayarlar").close();
   $("#ayar-form").onsubmit = ayarlariKaydet;
   $("#yedek-indir").onclick = yedekIndir;
+  for (const r of document.querySelectorAll('[name="saglayici"]')) {
+    r.addEventListener("change", () => {
+      // Diğer sağlayıcıya geçmeden önce yazılan anahtarı hatırla.
+      const form = $("#ayar-form");
+      const onceki = r.value === "gemini" ? "claude" : "gemini";
+      girilenAnahtarlar[onceki] = form.anahtar.value.trim();
+      anahtarAlaniniGuncelle();
+    });
+  }
   $("#yedek-yukle").onchange = yedekYukle;
   // Profil yokken Esc ile pencerenin kapanmasını engelle.
   $("#ayarlar").addEventListener("cancel", (o) => { if (!db.profilGetir()) o.preventDefault(); });

@@ -68,11 +68,15 @@
           <label class="secim"><input type="radio" name="cinsiyet" value="kadın"> Kadın</label>
         </fieldset>
       </div>
-      <label>Anthropic API anahtarı
-        <input name="anahtar" type="password" autocomplete="off" placeholder="sk-ant-...">
+      <fieldset>
+        <legend>Yapay zeka</legend>
+        <label class="secim"><input type="radio" name="saglayici" value="gemini" checked> Gemini (ücretsiz)</label>
+        <label class="secim"><input type="radio" name="saglayici" value="claude"> Claude (ücretli)</label>
+      </fieldset>
+      <label><span id="anahtar-etiket">API anahtarı</span>
+        <input name="anahtar" type="password" autocomplete="off">
       </label>
-      <p class="ipucu">Anahtar yalnızca bu telefonda saklanır ve sadece api.anthropic.com'a gönderilir.
-        Anahtarı console.anthropic.com adresinden alabilirsiniz.</p>
+      <p id="anahtar-ipucu" class="ipucu"></p>
       <button type="submit" class="ana-buton">Kaydet</button>
       <div class="yedek">
         <button type="button" id="yedek-indir" class="metin-buton">Yedeği indir (.db)</button>
