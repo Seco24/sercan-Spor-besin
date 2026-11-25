@@ -49,7 +49,8 @@ const SEMA = `
   );
   CREATE TABLE IF NOT EXISTS sporlar (
     id INTEGER PRIMARY KEY AUTOINCREMENT, tarih TEXT NOT NULL,
-    ad TEXT NOT NULL, kalori REAL NOT NULL, notlar TEXT
+    ad TEXT NOT NULL, kalori REAL NOT NULL, notlar TEXT,
+    kilo REAL  -- hesaplama anındaki kilo (kayıtlı sonucu yeni kiloya ölçeklemek için)
   );
   CREATE INDEX IF NOT EXISTS ix_yemek_tarih ON yemekler(tarih);
   CREATE INDEX IF NOT EXISTS ix_spor_tarih  ON sporlar(tarih);
@@ -62,7 +63,7 @@ export class Veritabani {
     const SQL = await window.initSqlJs({ locateFile: (dosya) => `./${dosya}` });
     const kayitli = await idbOku(DB_ANAHTARI);
     const db = new Veritabani(kayitli ? new SQL.Database(kayitli) : new SQL.Database());
-    db.db.exec(SEMA);
+    db._semaHazirla();
     // Tarayıcıdan, depolamayı yer açmak için silmemesini iste (desteklenirse).
     navigator.storage?.persist?.();
     return db;
@@ -70,6 +71,13 @@ export class Veritabani {
 
   constructor(sqlDb) {
     this.db = sqlDb;
+  }
+
+  // Tabloları oluştur; eski sürümden gelen veritabanına eksik sütunu ekle.
+  _semaHazirla() {
+    this.db.exec(SEMA);
+    const sutunlar = this._sorgu("PRAGMA table_info(sporlar)").map((s) => s.name);
+    if (!sutunlar.includes("kilo")) this.db.exec("ALTER TABLE sporlar ADD COLUMN kilo REAL");
   }
 
   // Her yazma işleminden sonra veritabanını kalıcı depoya kaydet.
@@ -101,10 +109,27 @@ export class Veritabani {
 
   // ---------- Yemek / Spor ----------
   // tablo yalnızca "yemekler" veya "sporlar" olabilir (kullanıcı girdisi değildir).
-  async kayitEkle(tablo, tarih, ad, kalori, notlar = "") {
-    this.db.run(`INSERT INTO ${tablo} (tarih, ad, kalori, notlar) VALUES (?, ?, ?, ?)`,
-      [tarih, ad, kalori, notlar]);
+  async kayitEkle(tablo, tarih, ad, kalori, notlar = "", kilo = null) {
+    if (tablo === "sporlar") {
+      this.db.run("INSERT INTO sporlar (tarih, ad, kalori, notlar, kilo) VALUES (?, ?, ?, ?, ?)",
+        [tarih, ad, kalori, notlar, kilo]);
+    } else {
+      this.db.run("INSERT INTO yemekler (tarih, ad, kalori, notlar) VALUES (?, ?, ?, ?)",
+        [tarih, ad, kalori, notlar]);
+    }
     await this._kaydet();
+  }
+
+  // Daha önce girilmiş farklı kayıtlar, en son girilen önce.
+  // Hem "kayıtlı sonucu tekrar kullan" hem de hızlı ekleme düğmeleri için kullanılır.
+  oncekiKayitlar(tablo, sinir = 300) {
+    const kiloSutunu = tablo === "sporlar" ? "kilo" : "NULL AS kilo";
+    return this._sorgu(
+      `SELECT ad, kalori, notlar, ${kiloSutunu} FROM ${tablo}
+        WHERE id IN (SELECT MAX(id) FROM ${tablo} GROUP BY ad)
+        ORDER BY id DESC LIMIT ?`,
+      [sinir]
+    );
   }
 
   kayitlariGetir(tablo, tarih) {
@@ -124,9 +149,16 @@ export class Veritabani {
   async iceAktar(baytlar) {
     const SQL = await window.initSqlJs({ locateFile: (dosya) => `./${dosya}` });
     const yeni = new SQL.Database(baytlar);
-    yeni.exec(SEMA); // Geçerli bir SQLite dosyası değilse burada hata verir.
-    this.db.close();
+    const eski = this.db;
     this.db = yeni;
+    try {
+      this._semaHazirla(); // Geçerli bir SQLite dosyası değilse burada hata verir.
+    } catch (hata) {
+      this.db = eski;
+      yeni.close();
+      throw hata;
+    }
+    eski.close();
     await this._kaydet();
   }
 }

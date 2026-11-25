@@ -67,6 +67,7 @@ function yenile() {
   $("#sayi-yemekler").textContent = yemekler.length || "";
   $("#sayi-sporlar").textContent = sporlar.length || "";
   listeyiCiz(aktifSekme === "yemekler" ? yemekler : sporlar);
+  hizliEklemeCiz();
 }
 
 function listeyiCiz(kayitlar) {
@@ -120,10 +121,49 @@ function sekmeSec(sekme) {
   yenile();
 }
 
-// ---------- Kayıt ekleme (API çağrısı) ----------
-async function ekle(olay) {
-  olay.preventDefault();
-  const metin = $("#giris").value.trim();
+// ---------- Kayıtlı sonuçlar (istek harcamadan ekleme) ----------
+// "200 gram Pilav " ile "200 gram pilav" aynı kabul edilir.
+const normallestir = (metin) => metin.toLocaleLowerCase("tr").replace(/\s+/g, " ").trim();
+
+// Aynı yemek/egzersiz daha önce hesaplandıysa o sonucu döndürür.
+// Spor kalorisi kiloyla orantılı olduğu için eski sonuç bugünkü kiloya ölçeklenir.
+function kayitliSonuc(tablo, metin, kilo) {
+  const aranan = normallestir(metin);
+  const onceki = db.oncekiKayitlar(tablo).find((k) => normallestir(k.ad) === aranan);
+  if (!onceki) return null;
+  let kalori = onceki.kalori;
+  if (tablo === "sporlar" && onceki.kilo) kalori = Math.round((kalori * kilo) / onceki.kilo);
+  return { kalori, not: onceki.notlar || "" };
+}
+
+// Son girilen farklı kayıtları tek dokunuşla eklemek için düğme olarak göster.
+function hizliEklemeCiz() {
+  const kutu = $("#hizli");
+  kutu.replaceChildren();
+  // Büyük/küçük harf farkı olanları tek düğmede topla, en fazla 8 düğme göster.
+  const gorulen = new Set();
+  const kayitlar = db.oncekiKayitlar(aktifSekme, 50).filter((k) => {
+    const anahtar = normallestir(k.ad);
+    if (gorulen.has(anahtar)) return false;
+    gorulen.add(anahtar);
+    return true;
+  }).slice(0, 8);
+  $("#hizli-baslik").hidden = kayitlar.length === 0;
+  for (const k of kayitlar) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "hizli-buton";
+    b.textContent = k.ad;
+    b.onclick = () => ekle(null, k.ad);
+    kutu.append(b);
+  }
+}
+
+// ---------- Kayıt ekleme ----------
+async function ekle(olay, hazirMetin) {
+  olay?.preventDefault();
+  // Fazla boşlukları temizle: "2  yumurta " -> "2 yumurta"
+  const metin = (hazirMetin ?? $("#giris").value).replace(/\s+/g, " ").trim();
   if (!metin) return;
   const tablo = aktifSekme;
   const tarih = seciliTarih;
@@ -133,12 +173,17 @@ async function ekle(olay) {
   $("#durum").textContent = "";
   delete $("#durum").dataset.hata;
   try {
-    const sonuc = tablo === "yemekler"
-      ? await yemekKalorisi(metin)
-      : await sporKalorisi(metin, db.profilGetir().kilo);
-    await db.kayitEkle(tablo, tarih, metin, sonuc.kalori, sonuc.not);
-    $("#giris").value = "";
-    $("#durum").textContent = `Eklendi: ${metin} → ${sayi(sonuc.kalori)} kcal`;
+    const kilo = db.profilGetir().kilo;
+    // Önce telefondaki eski kayıtlara bak; varsa yapay zekaya hiç sorulmaz.
+    let sonuc = kayitliSonuc(tablo, metin, kilo);
+    const kayittan = sonuc !== null;
+    if (!kayittan) {
+      sonuc = tablo === "yemekler" ? await yemekKalorisi(metin) : await sporKalorisi(metin, kilo);
+    }
+    await db.kayitEkle(tablo, tarih, metin, sonuc.kalori, sonuc.not, kilo);
+    if (!hazirMetin) $("#giris").value = "";
+    $("#durum").textContent = `Eklendi: ${metin} → ${sayi(sonuc.kalori)} kcal` +
+      (kayittan ? " (kayıtlı sonuç, istek harcanmadı)" : "");
     yenile();
   } catch (hata) {
     const mesaj = hata instanceof YapayZekaHatasi ? hata.message : `Beklenmeyen hata: ${hata.message}`;
