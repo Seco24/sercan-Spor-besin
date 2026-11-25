@@ -12,7 +12,7 @@ const girilenAnahtarlar = { gemini: "", claude: "" };
 const SAGLAYICI_BILGI = {
   gemini: {
     etiket: "Gemini API anahtarı",
-    ornek: "AIza...",
+    ornek: "AQ.... veya AIza...",
     ipucu: "Ücretsiz: aistudio.google.com/apikey adresinden Google hesabınızla alın, kredi kartı gerekmez. " +
       "Günlük kullanım sınırı vardır; ücretsiz katmanda Google girdiğiniz metinleri ürünlerini geliştirmek için kullanabilir.",
   },
