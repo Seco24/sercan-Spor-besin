@@ -6,6 +6,7 @@ import {
   YapayZekaHatasi, anahtarGetir, anahtarKaydet, saglayiciGetir, saglayiciKaydet,
   sporKalorisi, yemekKalorisi,
 } from "./yapay_zeka.js";
+import { sporHesapla, yemekHesapla } from "./yerel_veri.js";
 
 // Ayarlar ekranında her sağlayıcı için yazılan anahtar (Kaydet'e basılınca saklanır).
 const girilenAnahtarlar = { gemini: "", claude: "" };
@@ -174,16 +175,22 @@ async function ekle(olay, hazirMetin) {
   delete $("#durum").dataset.hata;
   try {
     const kilo = db.profilGetir().kilo;
-    // Önce telefondaki eski kayıtlara bak; varsa yapay zekaya hiç sorulmaz.
+    // Sırayla: 1) daha önce girilmiş aynı kayıt, 2) hazır tablo (USDA / Compendium),
+    // 3) yapay zeka. İlk ikisi internet ve istek harcamaz.
     let sonuc = kayitliSonuc(tablo, metin, kilo);
-    const kayittan = sonuc !== null;
-    if (!kayittan) {
+    let kaynak = "kayıtlı sonuç";
+    if (!sonuc) {
+      sonuc = tablo === "yemekler" ? yemekHesapla(metin) : sporHesapla(metin, kilo);
+      kaynak = "hazır veri";
+    }
+    if (!sonuc) {
       sonuc = tablo === "yemekler" ? await yemekKalorisi(metin) : await sporKalorisi(metin, kilo);
+      kaynak = null;
     }
     await db.kayitEkle(tablo, tarih, metin, sonuc.kalori, sonuc.not, kilo);
     if (!hazirMetin) $("#giris").value = "";
     $("#durum").textContent = `Eklendi: ${metin} → ${sayi(sonuc.kalori)} kcal` +
-      (kayittan ? " (kayıtlı sonuç, istek harcanmadı)" : "");
+      (kaynak ? ` (${kaynak}, istek harcanmadı)` : "");
     yenile();
   } catch (hata) {
     const mesaj = hata instanceof YapayZekaHatasi ? hata.message : `Beklenmeyen hata: ${hata.message}`;

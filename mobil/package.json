@@ -1,6 +1,7 @@
 {
   "name": "kalori-takip-mobil",
   "private": true,
+  "type": "module",
   "version": "1.0.0",
   "description": "Kalori ve spor takip uygulamasının telefon (PWA) sürümü",
   "scripts": {

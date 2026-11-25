@@ -1,7 +1,7 @@
 // Service worker: uygulama dosyalarını önbelleğe alır, böylece internet yokken de açılır.
 // (Kalori hesaplama yine internet ister; API isteklerine dokunulmaz.)
 // Dosyalar değiştiğinde SURUM'u artırın, telefondaki eski önbellek yenilenir.
-const SURUM = "kalori-takip-v5";
+const SURUM = "kalori-takip-v6";
 const DOSYALAR = [
   "./", "./index.html", "./stil.css", "./app.bundle.js",
   "./sql-wasm.js", "./sql-wasm.wasm", "./manifest.webmanifest", "./ikon-192.png", "./ikon-512.png",

@@ -21,6 +21,17 @@ Veriler telefonda SQLite (sql.js) ile saklanır; internet olmadan da açılır, 
   Günlük kullanım sınırı vardır. Ücretsiz katmanda Google girilen metinleri ürünlerini geliştirmek için kullanabilir.
 - **Claude (ücretli):** https://console.anthropic.com adresinden bakiye yükleyip anahtar oluşturulur.
 
+**İstek harcamadan hesaplama:** Uygulama yapay zekaya sormadan önce sırayla şunlara bakar:
+1. Aynı yemek/egzersiz daha önce girildiyse o sonuç kullanılır (spor sonucu güncel kiloya ölçeklenir).
+2. Hazır tablolar: ~80 temel besin (USDA FoodData Central, kamu malı) ve ~30 egzersiz
+   (2024 Compendium of Physical Activities MET değerleri). Örn. "2 yumurta ve 2 dilim ekmek",
+   "200 gram haşlanmış pirinç", "30 dakika koşu". Metin tabloyla tam eşleşmezse (örn. "pilav", "lahmacun")
+   yapay zekaya sorulur.
+3. Yapay zeka (Gemini / Claude).
+
+Besin tablosunu yeniden üretmek için: USDA SR Legacy CSV'sini indirip
+`python mobil/veri/besin_tablosu_olustur.py <klasör>` çalıştırın.
+
 **API anahtarı:** Telefonda ortam değişkeni olmadığı için anahtar ⚙ Ayarlar'a bir kez girilir; kodda yer almaz,
 yalnızca o telefonun tarayıcı deposunda tutulur ve sadece seçili sağlayıcıya gönderilir.
 
