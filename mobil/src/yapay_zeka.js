@@ -10,9 +10,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 const CLAUDE_MODEL = "claude-opus-5-5";
-// "-latest" takma adı Google'ın güncel Flash-Lite modelini gösterir;
-// ücretsiz katmanda en yüksek günlük kullanım sınırı genelde bu modeldedir.
-const GEMINI_MODEL = "gemini-flash-lite-latest";
+// "-latest" takma adları Google'ın güncel modellerini gösterir.
+// Önce Flash-Lite denenir (ücretsiz katmanda günlük sınırı genelde en yüksek olan);
+// yoğunsa ya da sınırı dolduysa Flash'a geçilir. İki modelin ücretsiz sınırı ayrıdır.
+const GEMINI_MODELLERI = ["gemini-flash-lite-latest", "gemini-flash-latest"];
+const GECICI_HATALAR = [500, 503, 504]; // Google tarafındaki geçici yoğunluk/arıza
+const bekle = (ms) => new Promise((coz) => setTimeout(coz, ms));
 
 const DEPO = {
   saglayici: "yapay_zeka_saglayici",
@@ -94,8 +97,28 @@ async function sor(sistemIstemi, kullaniciMetni) {
 }
 
 // ---------- Google Gemini (ücretsiz katman) ----------
+// Geçici yoğunlukta (503 vb.) aynı model bir kez daha denenir, olmazsa sıradaki modele
+// geçilir. Kota dolduysa (429) doğrudan sıradaki modele geçilir.
 async function geminiSor(apiKey, sistemIstemi, kullaniciMetni) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+  let sonDurum = 0;
+  for (const model of GEMINI_MODELLERI) {
+    for (let deneme = 0; deneme < 2; deneme++) {
+      const { durum, veri } = await geminiIstek(apiKey, model, sistemIstemi, kullaniciMetni);
+      if (durum === 200) return geminiMetni(veri);
+      sonDurum = durum;
+      if (GECICI_HATALAR.includes(durum)) { await bekle(1500 * (deneme + 1)); continue; }
+      if (durum === 429 || durum === 404) break; // sıradaki modele geç
+      throw geminiHatasi(durum, veri); // anahtar hatası vb.: denemenin anlamı yok
+    }
+  }
+  if (sonDurum === 429) {
+    throw new YapayZekaHatasi("Ücretsiz kullanım sınırına ulaşıldı. Bir dakika bekleyin; devam ederse günlük sınır dolmuştur, yarın tekrar deneyin.");
+  }
+  throw new YapayZekaHatasi("Gemini şu an çok yoğun. Birkaç dakika sonra tekrar deneyin.");
+}
+
+async function geminiIstek(apiKey, model, sistemIstemi, kullaniciMetni) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   let yanit;
   try {
     yanit = await fetch(url, {
@@ -111,18 +134,19 @@ async function geminiSor(apiKey, sistemIstemi, kullaniciMetni) {
   } catch {
     throw new YapayZekaHatasi("Gemini'ye bağlanılamadı. İnternet bağlantınızı kontrol edin.");
   }
+  return { durum: yanit.status, veri: await yanit.json().catch(() => ({})) };
+}
 
-  const veri = await yanit.json().catch(() => ({}));
-  if (!yanit.ok) {
-    const mesaj = veri?.error?.message || "";
-    if (yanit.status === 429) {
-      throw new YapayZekaHatasi("Ücretsiz kullanım sınırına ulaşıldı. Bir dakika bekleyin; devam ederse günlük sınır dolmuştur, yarın tekrar deneyin.");
-    }
-    if (yanit.status === 400 && /api key/i.test(mesaj)) throw new YapayZekaHatasi("Gemini API anahtarı geçersiz.");
-    if (yanit.status === 403) throw new YapayZekaHatasi("Gemini API anahtarının bu işlem için izni yok. Anahtarı kontrol edin.");
-    throw new YapayZekaHatasi(`Gemini hatası (${yanit.status}): ${mesaj}`);
+function geminiHatasi(durum, veri) {
+  const mesaj = veri?.error?.message || "";
+  if ((durum === 400 || durum === 401) && /api key|credential|token/i.test(mesaj)) {
+    return new YapayZekaHatasi("Gemini API anahtarı geçersiz. Ayarlardan kontrol edin.");
   }
+  if (durum === 403) return new YapayZekaHatasi("Gemini API anahtarının bu işlem için izni yok. Anahtarı kontrol edin.");
+  return new YapayZekaHatasi(`Gemini hatası (${durum}): ${mesaj}`);
+}
 
+function geminiMetni(veri) {
   if (veri.promptFeedback?.blockReason) {
     throw new YapayZekaHatasi("Model bu isteği yanıtlamadı. Lütfen farklı ifade edin.");
   }
